@@ -1,0 +1,17 @@
+{
+  "name": "hgi-bills-tracker",
+  "version": "1.0.0",
+  "description": "Harbor Gazebo Improvements outstanding bills tracker, shared between Oel and Willie",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0"
+  }
+}
