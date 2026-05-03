@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGI Outstanding Bills Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Archivo+Black&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<style>
+:root {
+  --ink: #0F1B2D;
+  --paper: #F4F0E8;
+  --card: #FAF8F4;
+  --rule: #D8D2C5;
+  --rust: #B8462A;
+  --amber: #C97A14;
+  --sage: #6B7B5C;
+  --stone: #8B8579;
+  --slate: #4A5468;
+  --green: #3D7A5C;
+  --red-soft: #FBE9E2;
+  --amber-soft: #FBEFD8;
+  --yellow-soft: #FDF6DC;
+  --gray-soft: #ECE8DD;
+  --blue-soft: #DDE7F0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+body { padding-bottom: 220px; min-height: 100vh; }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+/* Identity modal */
+.identity-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 27, 45, 0.85);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.identity-card {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 100%;
+}
+.identity-card h2 {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.identity-card p {
+  font-size: 13px;
+  color: var(--slate);
+  margin-bottom: 18px;
+}
+.identity-options {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.identity-btn {
+  flex: 1; min-width: 120px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.identity-btn:hover { background: var(--ink); color: var(--paper); }
+.identity-input {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--rule);
+  background: var(--card);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+}
+.identity-input:focus { outline: none; border-color: var(--ink); }
+.identity-submit {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Header */
+.header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+}
+.title-row {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  flex-wrap: wrap; gap: 12px;
+}
+.title {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: clamp(20px, 3.5vw, 30px);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-top: 6px;
+}
+.project-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 4px 10px;
+  letter-spacing: 0.05em;
+}
+.who-strip {
+  margin-top: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--slate);
+  display: flex; gap: 14px; flex-wrap: wrap;
+}
+.who-strip strong { color: var(--ink); }
+.who-switch {
+  background: none; border: none; color: var(--slate);
+  text-decoration: underline; cursor: pointer;
+  font-family: inherit; font-size: inherit;
+  letter-spacing: inherit; text-transform: inherit;
+  padding: 0;
+}
+
+/* Controls */
+.controls {
+  display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap; margin-bottom: 18px;
+}
+.toggle-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  user-select: none;
+  transition: background 0.15s;
+}
+.toggle-pill:hover { background: var(--gray-soft); }
+.toggle-pill.active { background: var(--ink); color: var(--paper); }
+.toggle-pill .check {
+  width: 14px; height: 14px;
+  border: 1.5px solid currentColor;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.toggle-pill.active .check::before { content: '\2713'; }
+
+.btn-secondary {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1.5px solid var(--stone);
+  color: var(--slate);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.btn-secondary:hover { border-color: var(--ink); color: var(--ink); }
+.btn-print {
+  padding: 8px 14px;
+  background: var(--ink); color: var(--paper);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.btn-print:hover { background: var(--rust); border-color: var(--rust); }
+
+.legend {
+  margin-left: auto;
+  display: flex; gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  align-items: center; flex-wrap: wrap;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border: 1px solid var(--ink); }
+
+/* Bill row */
+.bill-list { display: flex; flex-direction: column; gap: 8px; }
+.bill {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--stone);
+  display: grid;
+  grid-template-columns: 28px auto 1fr auto;
+  gap: 0; align-items: stretch;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.bill.priority-CRITICAL { border-left-color: var(--rust); }
+.bill.priority-HIGH { border-left-color: var(--amber); }
+.bill.priority-MEDIUM { border-left-color: var(--sage); }
+.bill.priority-LOW { border-left-color: var(--stone); }
+.bill.priority-PENDING { border-left-color: var(--slate); }
+
+.bill.next-app {
+  background: linear-gradient(90deg, var(--blue-soft) 0%, var(--card) 60%);
+  box-shadow: 0 0 0 1px var(--slate);
+}
+.bill.dragging { opacity: 0.7; transform: scale(0.99); box-shadow: 0 8px 18px rgba(15, 27, 45, 0.18); }
+.bill.ghost { background: var(--gray-soft); border-style: dashed; }
+
+.rank {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  color: var(--stone);
+  background: var(--paper);
+  border-right: 1px solid var(--rule);
+  cursor: grab;
+  touch-action: none;
+}
+.rank:active { cursor: grabbing; }
+.rank::before { content: '\22EE\22EE'; letter-spacing: -3px; font-size: 14px; color: var(--stone); }
+
+.bill-main { padding: 12px 14px 12px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bill-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.priority-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  color: var(--paper);
+  flex-shrink: 0;
+}
+.priority-badge.CRITICAL { background: var(--rust); }
+.priority-badge.HIGH { background: var(--amber); }
+.priority-badge.MEDIUM { background: var(--sage); }
+.priority-badge.LOW { background: var(--stone); }
+.priority-badge.PENDING { background: var(--slate); }
+.code-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  color: var(--slate);
+  letter-spacing: 0.06em;
+  background: var(--gray-soft);
+  padding: 2px 5px;
+}
+.vendor { font-weight: 600; font-size: 14px; color: var(--ink); }
+.invoice-line { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--slate); }
+.bill-meta { display: flex; gap: 14px; font-size: 11px; color: var(--slate); flex-wrap: wrap; margin-top: 4px; }
+.bill-meta span { font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+.spec { color: var(--ink); font-weight: 500; }
+.note { font-size: 12px; color: var(--slate); margin-top: 6px; font-style: italic; }
+.edit-stamp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-top: 4px;
+}
+.edit-stamp.empty { color: var(--stone); }
+
+.amount-col {
+  padding: 12px 14px; text-align: right;
+  border-left: 1px dashed var(--rule);
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+  min-width: 130px;
+}
+.amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 17px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.amount.tbd { color: var(--stone); font-size: 12px; font-weight: 500; }
+.due {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--stone);
+  margin-top: 2px;
+}
+
+.action-col {
+  border-left: 1px solid var(--rule);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  align-items: stretch; min-width: 160px;
+  background: var(--paper);
+}
+.next-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+.next-toggle input { display: none; }
+.switch {
+  width: 32px; height: 18px;
+  background: var(--rule);
+  position: relative;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  transition: left 0.15s;
+}
+.next-toggle input:checked ~ .switch { background: var(--ink); }
+.next-toggle input:checked ~ .switch::after { left: 16px; background: var(--green); border-color: var(--green); }
+.next-toggle .label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--slate);
+}
+.next-toggle input:checked ~ .label { color: var(--green); }
+
+.comment-input {
+  width: 100%;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  padding: 6px 8px;
+  color: var(--ink);
+  resize: vertical;
+  min-height: 30px;
+}
+.comment-input:focus { outline: none; border-color: var(--ink); }
+.comment-input::placeholder { color: var(--stone); font-style: italic; }
+
+/* Footer */
+.summary-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-top: 4px solid var(--rust);
+  z-index: 100;
+}
+.summary-content {
+  max-width: 1100px; margin: 0 auto;
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px; align-items: center;
+}
+.summary-block { display: flex; flex-direction: column; }
+.summary-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rule);
+}
+.summary-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+.summary-block.next .summary-value { color: #FBBF24; }
+.summary-block.next .summary-label { color: #FBBF24; }
+.summary-divider { height: 40px; width: 1px; background: var(--slate); justify-self: center; }
+.summary-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--rule);
+  text-align: right;
+}
+.summary-meta .last-edit { color: #FBBF24; margin-top: 4px; font-size: 9px; }
+.save-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.05em;
+  color: var(--rule); text-align: right;
+  margin-top: 4px; opacity: 0.7;
+  text-transform: uppercase;
+}
+.save-status.saving { color: #FBBF24; }
+.save-status.error { color: #FCA5A5; }
+
+.loading {
+  text-align: center; padding: 60px 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px; color: var(--slate);
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .bill { grid-template-columns: 28px 1fr; }
+  .amount-col {
+    grid-column: 2;
+    border-left: none;
+    border-top: 1px dashed var(--rule);
+    padding-top: 10px;
+    flex-direction: row; justify-content: space-between; align-items: baseline;
+  }
+  .due { margin-top: 0; }
+  .action-col {
+    grid-column: 2;
+    border-left: none; border-top: 1px solid var(--rule);
+  }
+  .legend { display: none; }
+  .summary-content { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .summary-divider { display: none; }
+  .summary-meta { grid-column: span 2; text-align: left; }
+}
+
+/* Print styles */
+@media print {
+  body { background: white; color: black; padding-bottom: 0; }
+  .controls, .summary-bar, .who-strip .who-switch { display: none !important; }
+  .header { border-bottom: 2px solid black; }
+  .container { max-width: none; padding: 0; }
+  .bill {
+    background: white !important;
+    border: 1px solid #999;
+    border-left: 4px solid #333;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+  .bill.next-app { background: white !important; box-shadow: none !important; }
+  .bill.priority-CRITICAL { border-left-color: #B8462A; }
+  .bill.priority-HIGH { border-left-color: #C97A14; }
+  .bill.priority-MEDIUM { border-left-color: #6B7B5C; }
+  .bill.priority-PENDING { border-left-color: #4A5468; }
+  .rank { display: none; }
+  .bill { grid-template-columns: auto 1fr auto auto; }
+  .action-col {
+    border-left: 1px solid #999;
+    background: white;
+    min-width: 180px;
+  }
+  .switch { display: none; }
+  .next-toggle .label::before {
+    content: attr(data-print);
+    font-weight: 700;
+  }
+  .next-toggle .label { font-size: 11px; }
+  .comment-input {
+    border: none; background: transparent;
+    padding: 0; font-size: 11px;
+    resize: none; height: auto; min-height: 0;
+  }
+  .comment-input::placeholder { color: transparent; }
+  .vendor, .invoice-line, .note, .bill-meta, .amount, .due { color: black !important; }
+  .priority-badge { color: white !important; }
+  .print-footer {
+    display: block !important;
+    margin-top: 24px;
+    padding: 14px;
+    border: 2px solid black;
+    background: white !important;
+  }
+  .print-footer-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .print-footer-row strong { font-weight: 700; }
+  .print-footer-row.total { font-size: 16px; font-weight: 700; padding-top: 6px; border-top: 1px solid black; }
+  .print-stamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #555;
+    margin-top: 8px;
+    text-align: right;
+  }
+}
+.print-footer { display: none; }
+</style>
+</head>
+<body>
+
+<div class="identity-overlay" id="identityOverlay" style="display:none;">
+  <div class="identity-card">
+    <h2>Who's reviewing?</h2>
+    <p>Pick your name so edits get attributed correctly. You'll only see this once on this device.</p>
+    <div class="identity-options">
+      <button class="identity-btn" data-name="Oel">I'm Oel</button>
+      <button class="identity-btn" data-name="Willie">I'm Willie</button>
+    </div>
+    <input type="text" class="identity-input" id="customName" placeholder="Or type a different name" maxlength="30">
+    <button class="identity-submit" id="customSubmit">Use this name</button>
+  </div>
+</div>
+
+<div class="container">
+  <header class="header">
+    <div class="title-row">
+      <div>
+        <h1 class="title">Outstanding Bills</h1>
+        <div class="subtitle">Harbor Gazebo Improvements / City of Mandeville</div>
+      </div>
+      <div class="project-num">No. 100.23.002</div>
+    </div>
+    <div class="who-strip">
+      <span>You are <strong id="whoami">...</strong></span>
+      <button class="who-switch" id="switchUser">Switch user</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="toggle-pill" id="filterToggle">
+      <span class="check"></span>
+      <span>Show Next Pay App Only</span>
+    </div>
+    <button class="btn-print" id="printBtn">Print / Save PDF</button>
+    <button class="btn-secondary" id="markAllNext">Mark All Next</button>
+    <button class="btn-secondary" id="clearNext">Clear All</button>
+    <button class="btn-secondary" id="resetBtn">Reset to Default</button>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background: var(--rust);"></span>CRITICAL</span>
+      <span class="legend-item"><span class="legend-dot" style="background: var(--amber);"></span>HIGH</span>
+      <span class="legend-item"><span class="legend-dot" style="background: var(--sage);"></span>MEDIUM</span>
+      <span class="legend-item"><span class="legend-dot" style="background: var(--slate);"></span>PENDING</span>
+      <span class="legend-item"><span class="legend-dot" style="background: var(--stone);"></span>LOW</span>
+    </div>
+  </div>
+
+  <div id="billList" class="bill-list">
+    <div class="loading">Loading bills...</div>
+  </div>
+
+  <!-- Print-only summary footer -->
+  <div class="print-footer" id="printFooter">
+    <div class="print-footer-row"><span>Next Pay App Selected</span><strong id="printNextTotal">$0.00</strong></div>
+    <div class="print-footer-row"><span>All Outstanding</span><strong id="printGrandTotal">$0.00</strong></div>
+    <div class="print-footer-row total"><span>SELECTED COUNT</span><strong id="printSelectedCount">0 of 0</strong></div>
+    <div class="print-stamp" id="printStamp"></div>
+  </div>
+</div>
+
+<div class="summary-bar">
+  <div class="summary-content">
+    <div class="summary-block next">
+      <span class="summary-label">Next Pay App</span>
+      <span class="summary-value" id="nextTotal">$0.00</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-block">
+      <span class="summary-label">All Outstanding</span>
+      <span class="summary-value" id="grandTotal">$0.00</span>
+    </div>
+    <div class="summary-meta">
+      <div><span id="nextCount">0</span> of <span id="totalCount">0</span> selected</div>
+      <div class="last-edit" id="lastEditMeta">Loading...</div>
+      <div class="save-status" id="saveStatus">Synced</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const IDENTITY_KEY = 'hgi_user_name';
+let me = '';
+let bills = [];
+let lastEditedAt = 0;
+let lastEditedBy = '';
+let filterMode = false;
+let saveTimeout = null;
+let pendingSave = false;
+
+const billList = document.getElementById('billList');
+const filterToggle = document.getElementById('filterToggle');
+const grandTotalEl = document.getElementById('grandTotal');
+const nextTotalEl = document.getElementById('nextTotal');
+const nextCountEl = document.getElementById('nextCount');
+const totalCountEl = document.getElementById('totalCount');
+const lastEditMetaEl = document.getElementById('lastEditMeta');
+const saveStatusEl = document.getElementById('saveStatus');
+const whoamiEl = document.getElementById('whoami');
+const identityOverlay = document.getElementById('identityOverlay');
+
+const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function relTime(ts) {
+  if (!ts) return 'never';
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} day${d===1?'':'s'} ago`;
+  return new Date(ts).toLocaleDateString();
+}
+
+function fmtFullStamp(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function showIdentityModal(force) {
+  if (!force) {
+    const stored = localStorage.getItem(IDENTITY_KEY);
+    if (stored) {
+      me = stored;
+      whoamiEl.textContent = me;
+      return false;
+    }
+  }
+  identityOverlay.style.display = 'flex';
+  return true;
+}
+
+function setIdentity(name) {
+  if (!name || !name.trim()) return;
+  me = name.trim().slice(0, 30);
+  localStorage.setItem(IDENTITY_KEY, me);
+  whoamiEl.textContent = me;
+  identityOverlay.style.display = 'none';
+}
+
+document.querySelectorAll('.identity-btn').forEach(btn => {
+  btn.addEventListener('click', () => setIdentity(btn.dataset.name));
+});
+document.getElementById('customSubmit').addEventListener('click', () => {
+  setIdentity(document.getElementById('customName').value);
+});
+document.getElementById('customName').addEventListener('keypress', e => {
+  if (e.key === 'Enter') setIdentity(e.target.value);
+});
+document.getElementById('switchUser').addEventListener('click', () => {
+  showIdentityModal(true);
+});
+
+async function loadBills() {
+  try {
+    const r = await fetch('/api/bills');
+    if (!r.ok) throw new Error('load failed');
+    const data = await r.json();
+    bills = data.bills || [];
+    lastEditedAt = data.updatedAt || 0;
+    lastEditedBy = data.updatedBy || '';
+  } catch (e) {
+    console.error('Could not load:', e);
+    saveStatusEl.textContent = 'Load error';
+    saveStatusEl.classList.add('error');
+  }
+}
+
+async function saveBills() {
+  pendingSave = false;
+  saveStatusEl.textContent = 'Saving...';
+  saveStatusEl.classList.add('saving');
+  saveStatusEl.classList.remove('error');
+  try {
+    const r = await fetch('/api/bills', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bills, updatedBy: me })
+    });
+    if (!r.ok) throw new Error('save failed');
+    const data = await r.json();
+    lastEditedAt = data.updatedAt;
+    lastEditedBy = me;
+    saveStatusEl.textContent = 'Synced';
+    saveStatusEl.classList.remove('saving');
+    updateLastEdit();
+  } catch (e) {
+    console.error('Save error:', e);
+    saveStatusEl.textContent = 'Save error';
+    saveStatusEl.classList.remove('saving');
+    saveStatusEl.classList.add('error');
+  }
+}
+
+function debouncedSave() {
+  pendingSave = true;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveBills, 500);
+}
+
+function stampEdit(bill) {
+  bill.lastEditedBy = me;
+  bill.lastEditedAt = Date.now();
+}
+
+function render() {
+  billList.innerHTML = '';
+  const visible = filterMode ? bills.filter(b => b.paidNext) : bills;
+
+  if (!visible.length) {
+    billList.innerHTML = '<div class="loading">No bills marked for next pay app yet</div>';
+    updateTotals();
+    return;
+  }
+
+  visible.forEach(bill => {
+    const row = document.createElement('div');
+    row.className = `bill priority-${bill.priority}${bill.paidNext ? ' next-app' : ''}`;
+    row.dataset.id = bill.id;
+
+    const amountStr = bill.amount != null ? fmt(bill.amount) : 'TBD';
+    const amountClass = bill.amount != null ? 'amount' : 'amount tbd';
+
+    const stampHtml = bill.lastEditedBy && bill.lastEditedAt
+      ? `<div class="edit-stamp">Last touched by ${bill.lastEditedBy}, ${relTime(bill.lastEditedAt)}</div>`
+      : `<div class="edit-stamp empty">Not yet reviewed</div>`;
+
+    row.innerHTML = `
+      <div class="rank" title="Drag to reorder"></div>
+      <div class="bill-main">
+        <div class="bill-top">
+          <span class="priority-badge ${bill.priority}">${bill.priority}</span>
+          <span class="code-tag">${bill.code}</span>
+          <span class="vendor">${bill.vendor}</span>
+        </div>
+        <div class="invoice-line">${bill.invoice}</div>
+        <div class="bill-meta">
+          <span class="spec">Spec ${bill.spec}</span>
+          <span>${bill.status}</span>
+        </div>
+        ${bill.context ? `<div class="note">${bill.context}</div>` : ''}
+        ${stampHtml}
+      </div>
+      <div class="amount-col">
+        <div class="${amountClass}">${amountStr}</div>
+        <div class="due">Due ${bill.dueDate}</div>
+      </div>
+      <div class="action-col">
+        <label class="next-toggle">
+          <input type="checkbox" data-id="${bill.id}" ${bill.paidNext ? 'checked' : ''}>
+          <span class="switch"></span>
+          <span class="label" data-print="${bill.paidNext ? '[X] ' : '[ ] '}">${bill.paidNext ? 'Next App' : 'Pay Next?'}</span>
+        </label>
+        <textarea class="comment-input" data-id="${bill.id}" placeholder="Notes...">${bill.comments || ''}</textarea>
+      </div>
+    `;
+    billList.appendChild(row);
+  });
+
+  billList.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      const id = e.target.dataset.id;
+      const b = bills.find(x => x.id === id);
+      if (b) {
+        b.paidNext = e.target.checked;
+        stampEdit(b);
+        render();
+        saveBills();
+      }
+    });
+  });
+
+  billList.querySelectorAll('textarea.comment-input').forEach(ta => {
+    ta.addEventListener('input', e => {
+      const id = e.target.dataset.id;
+      const b = bills.find(x => x.id === id);
+      if (b) {
+        b.comments = e.target.value;
+        stampEdit(b);
+        debouncedSave();
+      }
+    });
+  });
+
+  Sortable.create(billList, {
+    handle: '.rank',
+    animation: 150,
+    ghostClass: 'ghost',
+    dragClass: 'dragging',
+    onEnd: () => {
+      const newOrder = Array.from(billList.children).map(el => el.dataset.id);
+      if (filterMode) {
+        const visibleSet = new Set(newOrder);
+        let visibleIdx = 0;
+        const remapped = [];
+        bills.forEach(b => {
+          if (visibleSet.has(b.id)) {
+            const id = newOrder[visibleIdx++];
+            remapped.push(bills.find(x => x.id === id));
+          } else {
+            remapped.push(b);
+          }
+        });
+        bills = remapped;
+      } else {
+        bills = newOrder.map(id => bills.find(b => b.id === id)).filter(Boolean);
+      }
+      saveBills();
+    }
+  });
+
+  updateTotals();
+  updateLastEdit();
+}
+
+function updateTotals() {
+  let grand = 0, next = 0, nextCount = 0;
+  bills.forEach(b => {
+    const amt = b.amount || 0;
+    grand += amt;
+    if (b.paidNext) { next += amt; nextCount++; }
+  });
+  grandTotalEl.textContent = fmt(grand);
+  nextTotalEl.textContent = fmt(next);
+  nextCountEl.textContent = nextCount;
+  totalCountEl.textContent = bills.length;
+
+  // Print-only mirrors
+  document.getElementById('printNextTotal').textContent = fmt(next);
+  document.getElementById('printGrandTotal').textContent = fmt(grand);
+  document.getElementById('printSelectedCount').textContent = `${nextCount} of ${bills.length}`;
+}
+
+function updateLastEdit() {
+  if (lastEditedAt && lastEditedBy) {
+    lastEditMetaEl.textContent = `Last edit: ${lastEditedBy}, ${relTime(lastEditedAt)}`;
+  } else {
+    lastEditMetaEl.textContent = 'No edits yet';
+  }
+}
+
+filterToggle.addEventListener('click', () => {
+  filterMode = !filterMode;
+  filterToggle.classList.toggle('active', filterMode);
+  render();
+});
+
+document.getElementById('markAllNext').addEventListener('click', () => {
+  bills.forEach(b => { b.paidNext = true; stampEdit(b); });
+  render();
+  saveBills();
+});
+
+document.getElementById('clearNext').addEventListener('click', () => {
+  bills.forEach(b => { b.paidNext = false; stampEdit(b); });
+  render();
+  saveBills();
+});
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!confirm('Reset list to default order, clear all selections and notes? This affects everyone with the link.')) return;
+  try {
+    const r = await fetch('/api/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updatedBy: me })
+    });
+    if (!r.ok) throw new Error();
+    await loadBills();
+    render();
+  } catch (e) {
+    alert('Reset failed. Try again.');
+  }
+});
+
+document.getElementById('printBtn').addEventListener('click', () => {
+  const stamp = document.getElementById('printStamp');
+  stamp.textContent = `Printed by ${me || 'unknown'} on ${new Date().toLocaleString('en-US')}`;
+  window.print();
+});
+
+// Periodic refresh to pick up partner's edits
+let refreshTimer = null;
+function startRefresh() {
+  refreshTimer = setInterval(async () => {
+    if (pendingSave || document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    await loadBills();
+    if (!pendingSave) render();
+  }, 15000);
+}
+
+(async function init() {
+  showIdentityModal(false);
+  await loadBills();
+  render();
+  startRefresh();
+})();
+</script>
+
+</body>
+</html>
